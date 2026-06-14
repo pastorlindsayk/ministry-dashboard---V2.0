@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ministry Task Manager</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #F2F0EB;
+  --surface: #FAFAF8;
+  --surface-raised: #FFFFFF;
+  --border: #DDD9D0;
+  --border-light: #ECEAE4;
+  --text-primary: #1C1A16;
+  --text-secondary: #6B6860;
+  --text-muted: #A8A59E;
+
+  --high: #B5321E;
+  --high-bg: #FDF1EE;
+  --high-border: #EDCBC4;
+  --medium: #B06A00;
+  --medium-bg: #FDF8EE;
+  --medium-border: #EDDFB0;
+  --low: #2E6E4A;
+  --low-bg: #EEF7F2;
+  --low-border: #B8DECA;
+
+  --church: #4A3F8F;
+  --church-light: #EEF0FF;
+  --mission: #1A6B6B;
+  --mission-light: #EEF8F8;
+  --personal: #7A3F1A;
+  --personal-light: #FEF4EE;
+
+  --tab-active-church: #4A3F8F;
+  --tab-active-mission: #1A6B6B;
+  --tab-active-personal: #7A3F1A;
+  --tab-active-completed: #5A5550;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--text-primary);
+  padding: 18px 20px 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-title {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+
+.header-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 3px;
+  font-weight: 400;
+}
+
+.btn-refresh {
+  font-family: 'Inter', sans-serif;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.75);
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-refresh:hover { background: rgba(255,255,255,0.18); }
+.btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── SETUP BANNER ── */
+#setup-banner {
+  background: #FFFBEE;
+  border-bottom: 1px solid #EDE8C0;
+  padding: 12px 20px;
+  font-size: 12px;
+  color: #6B5800;
+  line-height: 1.5;
+}
+#setup-banner strong { font-weight: 600; }
+#setup-banner code {
+  background: rgba(0,0,0,0.07);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* ── STATS ROW ── */
+#stats-row {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#stats-row::-webkit-scrollbar { display: none; }
+
+.stat-cell {
+  flex: 1;
+  min-width: 70px;
+  padding: 10px 8px;
+  text-align: center;
+  border-right: 1px solid var(--border-light);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-num {
+  font-family: 'Lora', serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  display: block;
+}
+.stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+  display: block;
+}
+.stat-cell.s-high .stat-num { color: var(--high); }
+.stat-cell.s-medium .stat-num { color: var(--medium); }
+.stat-cell.s-low .stat-num { color: var(--low); }
+.stat-cell.s-total .stat-num { color: var(--text-primary); }
+
+/* ── TABS ── */
+#tab-bar {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex: 1;
+  min-width: 70px;
+  padding: 11px 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  font-family: 'Inter', sans-serif;
+}
+
+.tab .tab-count {
+  display: inline-block;
+  background: var(--border);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 0 5px;
+  font-size: 10px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+.tab[data-tab="church"].active { color: var(--church); border-bottom-color: var(--church); }
+.tab[data-tab="church"].active .tab-count { background: var(--church-light); color: var(--church); }
+.tab[data-tab="mission"].active { color: var(--mission); border-bottom-color: var(--mission); }
+.tab[data-tab="mission"].active .tab-count { background: var(--mission-light); color: var(--mission); }
+.tab[data-tab="personal"].active { color: var(--personal); border-bottom-color: var(--personal); }
+.tab[data-tab="personal"].active .tab-count { background: var(--personal-light); color: var(--personal); }
+.tab[data-tab="completed"].active { color: var(--tab-active-completed); border-bottom-color: var(--tab-active-completed); }
+
+/* ── CONTENT ── */
+.tab-content { display: none; padding: 16px 16px 48px; }
+.tab-content.active { display: block; }
+
+/* ── PRIORITY SECTION ── */
+.priority-section { margin-bottom: 20px; }
+
+.priority-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.priority-dot.high { background: var(--high); }
+.priority-dot.medium { background: var(--medium); }
+.priority-dot.low { background: var(--low); }
+
+.priority-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+}
+.priority-label.high { color: var(--high); }
+.priority-label.medium { color: var(--medium); }
+.priority-label.low { color: var(--low); }
+
+.priority-count {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+.priority-count.high { background: var(--high-bg); color: var(--high); }
+.priority-count.medium { background: var(--medium-bg); color: var(--medium); }
+.priority-count.low { background: var(--low-bg); color: var(--low); }
+
+/* ── TASK CARD ── */
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+
+.task-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 11px 13px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  border-left: 3px solid transparent;
+  transition: box-shadow 0.12s;
+}
+.task-card:active { box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.task-card.p-High { border-left-color: var(--high); }
+.task-card.p-Medium { border-left-color: var(--medium); }
+.task-card.p-Low { border-left-color: var(--low); }
+.task-card.is-done { opacity: 0.45; }
+.task-card.is-done .task-title { text-decoration: line-through; }
+
+.check-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 1px;
+  cursor: pointer;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 11px;
+  color: white;
+  font-weight: 700;
+}
+.check-btn:hover { border-color: var(--low); }
+.check-btn.done { background: var(--low); border-color: var(--low); }
+
+.task-body { flex: 1; min-width: 0; }
+
+.task-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.task-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.tag-cat { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+
+.task-notes {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 5px;
+  line-height: 1.4;
+  padding-left: 2px;
+  border-left: 2px solid var(--border-light);
+  padding-left: 6px;
+}
+
+.task-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── EMPTY ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+}
+.empty-icon { font-size: 28px; margin-bottom: 10px; }
+.empty-title { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.empty-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── LOADING ── */
+#loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+.spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border);
+  border-top-color: var(--church);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-state p { font-size: 13px; color: var(--text-muted); }
+
+/* ── ERROR ── */
+#error-state {
+  margin: 16px;
+  background: var(--high-bg);
+  border: 1px solid var(--high-border);
+  border-radius: 8px;
+  padding: 13px 15px;
+  font-size: 12px;
+  color: var(--high);
+  display: none;
+  line-height: 1.5;
+}
+
+/* ── COMPLETED TAB SPECIAL ── */
+.completed-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+@media (min-width: 640px) {
+  header { padding: 20px 24px; }
+  .header-title { font-size: 22px; }
+  #tab-bar .tab { font-size: 13px; padding: 13px 16px 12px; }
+  .tab-content { padding: 20px 20px 60px; }
+  .task-title { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">Ministry Tasks</div>
+    <div class="header-sub" id="last-updated">Loading…</div>
+  </div>
+  <button class="btn-refresh" id="refresh-btn" onclick="loadTasks()">↻ Refresh</button>
+</header>
+
+<div id="setup-banner">
+  <strong>Setup needed:</strong> Open this file in Notepad, find <code>YOUR_SHEET_CSV_URL_HERE</code> and replace it with your Google Sheet CSV URL. Save and reopen.
+</div>
+
+<div id="stats-row">
+  <div class="stat-cell s-high"><span class="stat-num" id="s-high">–</span><span class="stat-label">High</span></div>
+  <div class="stat-cell s-medium"><span class="stat-num" id="s-medium">–</span><span class="stat-label">Medium</span></div>
+  <div class="stat-cell s-low"><span class="stat-num" id="s-low">–</span><span class="stat-label">Low</span></div>
+  <div class="stat-cell s-total"><span class="stat-num" id="s-total">–</span><span class="stat-label">Active</span></div>
+</div>
+
+<div id="tab-bar">
+  <button class="tab active" data-tab="church" onclick="switchTab('church')">⛪ Church <span class="tab-count" id="tc-church">0</span></button>
+  <button class="tab" data-tab="mission" onclick="switchTab('mission')">🤲 Mission <span class="tab-count" id="tc-mission">0</span></button>
+  <button class="tab" data-tab="personal" onclick="switchTab('personal')">👤 Personal <span class="tab-count" id="tc-personal">0</span></button>
+  <button class="tab" data-tab="completed" onclick="switchTab('completed')">✓ Done <span class="tab-count" id="tc-completed">0</span></button>
+</div>
+
+<div id="loading-state"><div class="spinner"></div><p>Loading your tasks…</p></div>
+<div id="error-state"></div>
+
+<div id="content" style="display:none">
+  <div class="tab-content active" id="tab-church"></div>
+  <div class="tab-content" id="tab-mission"></div>
+  <div class="tab-content" id="tab-personal"></div>
+  <div class="tab-content" id="tab-completed"></div>
+</div>
+
+<script>
+// ============================================
+// REPLACE THIS WITH YOUR GOOGLE SHEET CSV URL
+const SHEET_CSV_URL = "SEAXgJGWUo8_nkVzv7mTMcyaaWL2WslIEg3nmLBsb5s";
+// ============================================
+
+let allTasks = [];
+let activeTab = 'church';
+
+const getDoneSet = () => { try { return new Set(JSON.parse(localStorage.getItem('doneTasks') || '[]')); } catch(e) { return new Set(); } };
+const saveDone = s => { try { localStorage.setItem('doneTasks', JSON.stringify([...s])); } catch(e) {} };
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+  return lines.slice(1).map((line, idx) => {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; }
+      else if (line[i] === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += line[i]; }
+    }
+    vals.push(cur.trim());
+    const obj = { _row: idx };
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/"/g,'').trim());
+    return obj;
+  }).filter(t => t.Task && t.Task.length > 0);
+}
+
+function normaliseCharity(val) {
+  const v = (val || '').toLowerCase();
+  if (v.includes('church') || v.includes('1')) return 'church';
+  if (v.includes('mission') || v.includes('2')) return 'mission';
+  if (v.includes('personal')) return 'personal';
+  if (v.includes('both')) return 'both';
+  return 'personal';
+}
+
+async function loadTasks() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true; btn.textContent = '↻ Loading…';
+  document.getElementById('loading-state').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('error-state').style.display = 'none';
+
+  if (SHEET_CSV_URL === 'YOUR_SHEET_CSV_URL_HERE') {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    renderEmpty('church', 'Follow setup instructions above', 'Replace the URL placeholder in the file to connect your tasks.');
+    renderEmpty('mission', 'Follow setup instructions above', '');
+    renderEmpty('personal', 'Follow setup instructions above', '');
+    btn.disabled = false; btn.textContent = '↻ Refresh';
+    return;
+  }
+
+  try {
+    const res = await fetch(SHEET_CSV_URL + '&t=' + Date.now());
+    if (!res.ok) throw new Error('fetch failed');
+    const text = await res.text();
+    const raw = parseCSV(text);
+    const doneSet = getDoneSet();
+
+    allTasks = raw.map((t, i) => {
+      const id = `${t.Timestamp || i}-${i}`;
+      return {
+        ...t,
+        _id: id,
+        _charity: normaliseCharity(t.Charity),
+        _done: doneSet.has(id) || (t.Status || '').toLowerCase() === 'done'
+      };
+    });
+
+    renderAll();
+    const now = new Date();
+    document.getElementById('last-updated').textContent =
+      `Refreshed ${now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
+  } catch(err) {
+    document.getElementById('loading-state').style.display = 'none';
+    const eb = document.getElementById('error-state');
+    eb.style.display = 'block';
+    eb.textContent = 'Could not load tasks. Check your sheet is published as CSV and try refreshing.';
+  }
+
+  btn.disabled = false; btn.textContent = '↻ Refresh';
+}
+
+function renderAll() {
+  const active = allTasks.filter(t => !t._done);
+  const high = active.filter(t => (t.Priority||'').toLowerCase() === 'high').length;
+  const medium = active.filter(t => (t.Priority||'').toLowerCase() === 'medium').length;
+  const low = active.filter(t => !['high','medium'].includes((t.Priority||'').toLowerCase())).length;
+
+  document.getElementById('s-high').textContent = high;
+  document.getElementById('s-medium').textContent = medium;
+  document.getElementById('s-low').textContent = low;
+  document.getElementById('s-total').textContent = active.length;
+
+  ['church','mission','personal'].forEach(cat => {
+    const tasks = active.filter(t => t._charity === cat || (cat !== 'both' && t._charity === 'both'));
+    document.getElementById('tc-' + cat).textContent = tasks.length;
+    renderCategory(cat, tasks);
+  });
+
+  const done = allTasks.filter(t => t._done);
+  document.getElementById('tc-completed').textContent = done.length;
+  renderCompleted(done);
+
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+}
+
+function renderCategory(cat, tasks) {
+  const el = document.getElementById('tab-' + cat);
+  if (tasks.length === 0) {
+    const labels = { church: 'Church', mission: 'Mission', personal: 'Personal' };
+    el.innerHTML = emptyHTML('Nothing here yet', `Send a task for ${labels[cat]} to your Telegram bot.`);
+    return;
+  }
+  const high = tasks.filter(t => (t.Priority||'').toLowerCase() === 'high');
+  const medium = tasks.filter(t => (t.Priority||'').toLowerCase() === 'medium');
+  const low = tasks.filter(t => !['high','medium'].includes((t.Priority||'').toLowerCase()));
+  let html = '';
+  if (high.length) html += prioritySection('High', 'high', high);
+  if (medium.length) html += prioritySection('Medium', 'medium', medium);
+  if (low.length) html += prioritySection('Low', 'low', low);
+  el.innerHTML = html;
+}
+
+function renderCompleted(tasks) {
+  const el = document.getElementById('tab-completed');
+  if (tasks.length === 0) {
+    el.innerHTML = emptyHTML('No completed tasks yet', 'Tick a task to mark it done.');
+    return;
+  }
+  el.innerHTML = `<p class="completed-meta">${tasks.length} completed task${tasks.length !== 1 ? 's' : ''}</p>` +
+    `<div class="task-list">${tasks.map(t => taskCard(t)).join('')}</div>`;
+}
+
+function renderEmpty(cat, title, sub) {
+  document.getElementById('tab-' + cat).innerHTML = emptyHTML(title, sub);
+}
+
+function prioritySection(label, cls, tasks) {
+  return `
+    <div class="priority-section">
+      <div class="priority-header">
+        <div class="priority-dot ${cls}"></div>
+        <span class="priority-label ${cls}">${label} Priority</span>
+        <span class="priority-count ${cls}">${tasks.length}</span>
+      </div>
+      <div class="task-list">${tasks.map(t => taskCard(t)).join('')}</div>
+    </div>`;
+}
+
+function taskCard(t) {
+  const done = t._done;
+  return `
+    <div class="task-card p-${t.Priority || 'Low'} ${done ? 'is-done' : ''}" id="card-${esc(t._id)}">
+      <div class="check-btn ${done ? 'done' : ''}" onclick="toggleTask('${esc(t._id)}')">${done ? '✓' : ''}</div>
+      <div class="task-body">
+        <div class="task-title">${esc(t.Task || '')}</div>
+        <div class="task-tags">
+          ${t.Category && t.Category !== 'N/A' ? `<span class="tag tag-cat">${esc(t.Category)}</span>` : ''}
+        </div>
+        ${t.Notes && !['n/a','none',''].includes((t.Notes||'').toLowerCase()) ? `<div class="task-notes">${esc(t.Notes)}</div>` : ''}
+        ${t.Timestamp ? `<div class="task-time">${esc(t.Timestamp)}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function emptyHTML(title, sub) {
+  return `<div class="empty-state">
+    <div class="empty-icon">✦</div>
+    <div class="empty-title">${title}</div>
+    <div class="empty-sub">${sub}</div>
+  </div>`;
+}
+
+function toggleTask(id) {
+  const doneSet = getDoneSet();
+  const task = allTasks.find(t => t._id === id);
+  if (!task) return;
+  if (doneSet.has(id)) { doneSet.delete(id); task._done = false; }
+  else { doneSet.add(id); task._done = true; }
+  saveDone(doneSet);
+  renderAll();
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+if (SHEET_CSV_URL !== 'YOUR_SHEET_CSV_URL_HERE') {
+  document.getElementById('setup-banner').style.display = 'none';
+}
+
+loadTasks();
+</script>
+</body>
+</html>
